@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Used as preLaunchTask by launch.json so F5 always debugs fresh code.
+      "label": "CMake: build Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "--preset", "Debug"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"],
+      "presentation": { "clear": true, "reveal": "silent" }
+    },
+    {
+      "label": "CMake: configure Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: clean rebuild Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "--preset", "Debug", "--clean-first"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      // Flash without debugging (handy for a quick program cycle).
+      "label": "Flash (STM32_Programmer_CLI)",
+      "type": "shell",
+      "command": "STM32_Programmer_CLI",
+      "args": [
+        "-c", "port=SWD",
+        "-w", "${workspaceFolder}/build/Debug/EMS_vsdebug_cmake.elf",
+        "-rst"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+C:/Users/LocalShivek/Documents/EMSworkspace/EMS_vsdebug_cmake/Core/Src/eth.c:52:6:MX_ETH_Init	8	static
+C:/Users/LocalShivek/Documents/EMSworkspace/EMS_vsdebug_cmake/Core/Src/eth.c:96:6:HAL_ETH_MspInit	64	static
+C:/Users/LocalShivek/Documents/EMSworkspace/EMS_vsdebug_cmake/Core/Src/eth.c:157:6:HAL_ETH_MspDeInit	16	static

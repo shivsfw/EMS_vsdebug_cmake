@@ -1,0 +1,8 @@
+{
+  "// note": "VS Code will prompt to install these when the folder is opened.",
+  "recommendations": [
+    "ms-vscode.cmake-tools",
+    "marus25.cortex-debug",
+    "ms-vscode.cpptools"
+  ]
+}

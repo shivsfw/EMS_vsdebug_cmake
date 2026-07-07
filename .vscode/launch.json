@@ -1,0 +1,40 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // ===== Primary: onboard ST-LINK via ST-LINK_gdbserver =====
+      "name": "Debug (ST-LINK)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "stlink",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/Debug/EMS_vsdebug_cmake.elf",
+      "device": "STM32F767ZI",
+      "interface": "swd",
+      "runToEntryPoint": "main",
+      "preLaunchTask": "CMake: build Debug",
+      "svdFile": "C:/ST/STM32CubeCLT_1.21.0/STMicroelectronics_CMSIS_SVD/STM32F767.svd",
+      "serverpath": "C:/ST/STM32CubeCLT_1.21.0/STLink-gdb-server/bin/ST-LINK_gdbserver.exe",
+      "stm32cubeprogrammer": "C:/ST/STM32CubeCLT_1.21.0/STM32CubeProgrammer/bin",
+      "gdbPath": "C:/ST/STM32CubeCLT_1.21.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+      "showDevDebugOutput": "none"
+    },
+    {
+      // ===== Alternative: same chip, same GDB, OpenOCD back-end =====
+      // Proves the "swap the gdbserver, keep everything else" point.
+      "name": "Debug (OpenOCD)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "openocd",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/Debug/EMS_vsdebug_cmake.elf",
+      "device": "STM32F767ZI",
+      "interface": "swd",
+      "runToEntryPoint": "main",
+      "preLaunchTask": "CMake: build Debug",
+      "svdFile": "C:/ST/STM32CubeCLT_1.21.0/STMicroelectronics_CMSIS_SVD/STM32F767.svd",
+      "configFiles": ["interface/stlink.cfg", "target/stm32f7x.cfg"],
+      "gdbPath": "C:/ST/STM32CubeCLT_1.21.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe"
+    }
+  ]
+}
