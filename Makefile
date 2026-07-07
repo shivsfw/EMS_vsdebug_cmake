@@ -14,9 +14,15 @@ hello:
 #This is a cornerstone of embedded C: one HAL source tree, specialized per-chip 
 #entirely through -D symbols.
 main.o: main.c 
-	arm-none-eabi-gcc -c $< -o $@ -DSTM32F767xx -DUSE_HAL_DRIVER\
+	arm-none-eabi-gcc -c $< -o $@ -DSTM32F767xx -DUSE_HAL_DRIVER \
+	-mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard \
 	  -I Core/Inc \
 	  -I Drivers/STM32F7xx_HAL_Driver/Inc \
 	  -I Drivers/STM32F7xx_HAL_Driver/Legacy \
-	  -I Drivers/CMSIS/DEVICE/ST/STM32F7xx/Include \
-	  -I Drivers/CMSIS/Include \
+	  -I Drivers/CMSIS/Device/ST/STM32F7xx/Include \
+	  -I Drivers/CMSIS/Include
+
+#Sen Habit
+#Use Unix commands
+#Case sensitive makefiles 
+#Last line does not have a '\' char for any recipe
