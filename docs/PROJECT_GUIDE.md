@@ -183,18 +183,21 @@ Hand-typed `Makefile` at project root. Output → `build/make/`. Run from Git Ba
 10-step incremental build; each step teaches one embedded-compile concept by
 hitting a real error, then fixing it. Update status as you go.
 
-- [ ] **Step 1** — Create `Makefile`; first rule `hello:` with `@echo "$(CURDIR)"`.
-      Learn: target / prereq / recipe, the TAB rule, default goal, `@` prefix, `$(VAR)`.
-      Verify: `make` prints "Make is alive…".
-- [ ] **Step 2** — Add `main.o:` rule running `arm-none-eabi-gcc -c Core/Src/main.c`.
-      EXPECT FAILURE: `fatal error: main.h: No such file`. Lesson: compiler doesn't
-      know header locations. (`-c` = compile-only; cross-compiler = build host ≠ target.)
-- [ ] **Step 3** — Add include paths (`-I Core/Inc`, HAL Inc, CMSIS…). Hit the NEXT
-      error → add preprocessor defines `-DSTM32F767xx -DUSE_HAL_DRIVER`. Now compiles.
-- [ ] **Step 4** — Add MCU arch flags `-mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16
-      -mfloat-abi=hard`. Why: object must match the core / FPU / float ABI or link fails.
+- [x] **Step 1** — `Makefile` created; `hello:` rule works. Learned TAB rule, default
+      goal, `@`, `$(VAR)`, `$(CURDIR)`.
+- [x] **Step 2** — Learned prereqs are resolved as files (hit "No rule to make target
+      main.c"); recipe text ≠ prereq. Also fixed a broken `TEMP=C:\WINDOWS` via
+      `export TMP/TEMP := $(CURDIR)/build/tmp` at top of Makefile.
+- [x] **Step 2b** — `VPATH = Core/Src` + automatic vars `$< $@` (VPATH resolves the
+      prereq; `$<` injects the found path into the recipe — VPATH doesn't touch recipes).
+- [x] **Step 3** — Added 5 `-I` include paths + `-DSTM32F767xx -DUSE_HAL_DRIVER`
+      (hit and understood the `#error "Please select... target STM32F7xx device"`).
+- [x] **Step 4** — Added MCU flags `-mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16
+      -mfloat-abi=hard` (hit `cpsid i in ARM mode` → Cortex-M is Thumb-only).
+      Also fixed path typos: `Inc/Legacy`, and `Device` casing (Windows hid the case bug).
+      `main.o` now compiles cleanly.
 - [ ] **Step 5** — Introduce variables (`CC`, `MCU`, `CFLAGS`, `C_DEFS`, `C_INCLUDES`)
-      to stop repeating flags. `:=` vs `=` vs `?=` vs `+=`.
+      to stop repeating flags. `:=` vs `=` vs `?=` vs `+=`.  *(IN PROGRESS)*
 - [ ] **Step 6** — `$(wildcard Core/Src/*.c ...)` to auto-discover sources;
       `patsubst`/`addprefix` to map sources → objects under `$(BUILD)`.
 - [ ] **Step 7** — Pattern rule `$(BUILD)/%.o: %.c` with automatic vars `$< $@`;
@@ -206,5 +209,6 @@ hitting a real error, then fixing it. Update status as you go.
 - [ ] **Step 10** — Auto-dependency generation: `-MMD -MP` + `-include $(DEPS)`
       (modern replacement for the book's Ch5 `gcc -M | sed` hack).
 
-**Resume marker:** currently between Step 1 and Step 2 — user typing the file,
-will report the Step 2 compile error. Next: guide the `-I` / `-D` fix (Step 3).
+**Resume marker:** Steps 1–4 done, `main.o` compiles. Now on Step 5 — factoring the
+long recipe into variables (`CC`, `MCU`, `C_DEFS`, `C_INCLUDES`, `OPT`, `CFLAGS`).
+Next after 5: Step 6 `$(wildcard)` to auto-discover all sources.
