@@ -27,7 +27,43 @@ WARN := -Wall #-Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-fu
 # ---- One bag of flags for the C compiler -----------------------------------
 CFLAGS := $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) $(WARN)
 
-VPATH = Core/Src
+ASMFLAGS := $(MCU) -x assembler-with-cpp
+
+# ---- Where build outputs go ------------------------------------------------
+BUILD := build/make
+
+# ---- Source discovery (scan the filesystem) --------------------------------
+C_SOURCES := $(wildcard Core/Src/*.c) \
+  $(wildcard Drivers/STM32F7xx_HAL_Driver/Src/*.c)
+
+ASM_SOURCES := startup_stm32f767xx.s
+
+# ---- Derive the object list from the sources -------------------------------
+OBJECTS := $(addprefix $(BUILD)/,$(C_SOURCES:.c=.o))
+OBJECTS += $(addprefix $(BUILD)/,$(ASM_SOURCES:.s=.o))
+
+#VPATH = Core/Src
+
+.PHONY: show objects
+show:
+	@echo "=== C_SOURCES ==="; echo $(C_SOURCES) | tr ' ' '\n'
+	@echo "=== OBJECTS ===";   echo $(OBJECTS)   | tr ' ' '\n'
+
+objects: $(OBJECTS)
+
+
+#Why Makefile is a prerequisite: your flags (CFLAGS) live in the Makefile. 
+#Listing Makefile as a prereq means that if you edit any flag, every 
+#object becomes out-of-date and rebuilds — so you never ship objects 
+#built with stale flags. (Trade-off: editing a comment also triggers a 
+#full rebuild. Worth it.)
+$(BUILD)/%.o: %.c Makefile
+	@mkdir -p $(dir $@)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(BUILD)/%.o: %.s Makefile
+	@mkdir -p $(dir $@)
+	$(CC) $(ASMFLAGS) -c $< -o $@
 
 hello:
 	@echo "Make is alive now! Working dir: $(CURDIR)"
@@ -36,8 +72,10 @@ hello:
 #every file — it configures the same headers to behave for your specific target. 
 #This is a cornerstone of embedded C: one HAL source tree, specialized per-chip 
 #entirely through -D symbols.
-main.o: main.c 
-	$(CC) $(CFLAGS) -c $< -o $@
+#main.o: main.c 
+#	$(CC) $(CFLAGS) -c $< -o $@
+
+
 
 #Sen Habit
 #Use Unix commands

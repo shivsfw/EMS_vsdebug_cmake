@@ -183,32 +183,36 @@ Hand-typed `Makefile` at project root. Output → `build/make/`. Run from Git Ba
 10-step incremental build; each step teaches one embedded-compile concept by
 hitting a real error, then fixing it. Update status as you go.
 
-- [x] **Step 1** — `Makefile` created; `hello:` rule works. Learned TAB rule, default
-      goal, `@`, `$(VAR)`, `$(CURDIR)`.
-- [x] **Step 2** — Learned prereqs are resolved as files (hit "No rule to make target
-      main.c"); recipe text ≠ prereq. Also fixed a broken `TEMP=C:\WINDOWS` via
-      `export TMP/TEMP := $(CURDIR)/build/tmp` at top of Makefile.
-- [x] **Step 2b** — `VPATH = Core/Src` + automatic vars `$< $@` (VPATH resolves the
-      prereq; `$<` injects the found path into the recipe — VPATH doesn't touch recipes).
-- [x] **Step 3** — Added 5 `-I` include paths + `-DSTM32F767xx -DUSE_HAL_DRIVER`
-      (hit and understood the `#error "Please select... target STM32F7xx device"`).
-- [x] **Step 4** — Added MCU flags `-mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16
-      -mfloat-abi=hard` (hit `cpsid i in ARM mode` → Cortex-M is Thumb-only).
-      Also fixed path typos: `Inc/Legacy`, and `Device` casing (Windows hid the case bug).
-      `main.o` now compiles cleanly.
-- [ ] **Step 5** — Introduce variables (`CC`, `MCU`, `CFLAGS`, `C_DEFS`, `C_INCLUDES`)
-      to stop repeating flags. `:=` vs `=` vs `?=` vs `+=`.  *(IN PROGRESS)*
-- [ ] **Step 6** — `$(wildcard Core/Src/*.c ...)` to auto-discover sources;
-      `patsubst`/`addprefix` to map sources → objects under `$(BUILD)`.
-- [ ] **Step 7** — Pattern rule `$(BUILD)/%.o: %.c` with automatic vars `$< $@`;
-      `mkdir -p $(dir $@)`; add `Makefile` as prereq so flag edits force rebuild.
-- [ ] **Step 8** — Link rule (`$^`, linker script `-T`, `--specs=nano.specs`,
-      `--gc-sections`); objcopy `.hex`/`.bin`; print `size`. First full `.elf`.
-- [ ] **Step 9** — Phony targets `.PHONY: all clean flash`; `flash` via
+- [x] **Step 1 — The mechanics:** a first rule, prove Make runs, learn the tab rule.
+      → `hello:` rule works; learned target/prereq/recipe, TAB rule, default goal,
+      `@` prefix, `$(VAR)`, `$(CURDIR)`.
+- [x] **Step 2 — Compile one file the naive way:** watch it fail, learn why embedded
+      needs special flags. → Learned prereqs resolve to real files (hit "No rule to make
+      target main.c"); recipe text ≠ prereq. `VPATH = Core/Src` + automatic vars `$< $@`
+      (VPATH resolves the prereq; `$<` injects the found path — VPATH doesn't touch
+      recipes). Also fixed a broken `TEMP=C:\WINDOWS` via
+      `export TMP/TEMP := $(CURDIR)/build/tmp`.
+- [x] **Step 3 — Fix it with include paths and preprocessor defines.** → Added 5 `-I`
+      paths + `-DSTM32F767xx -DUSE_HAL_DRIVER`; understood the
+      `#error "Please select... target STM32F7xx device"`.
+- [x] **Step 4 — Add the MCU architecture flags (the cross-compilation core).**
+      → `-mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard` (hit
+      `cpsid i in ARM mode` → Cortex-M is Thumb-only). Fixed path typos `Inc/Legacy`
+      and `Device` casing (Windows hid the case bug). `main.o` compiles cleanly.
+- [x] **Step 5 — Introduce variables to stop repeating ourselves.** → `CC`, `MCU`,
+      `C_DEFS`, `C_INCLUDES`, `OPT`, `WARN`, `CFLAGS`. Learned `:=` vs `=` vs `?=` vs
+      `+=`, immediate vs deferred expansion, and `make -n`/`--dry-run` to preview.
+- [ ] **Step 6 — `$(wildcard)` to auto-discover all sources.**  *(NEXT)*
+      Map sources → objects under `$(BUILD)` with `patsubst`/`addprefix`.
+- [ ] **Step 7 — Pattern rule + automatic variables to compile them all.**
+      `$(BUILD)/%.o: %.c` with `$< $@`; `mkdir -p $(dir $@)`; `Makefile` as a prereq.
+- [ ] **Step 8 — Link + objcopy (.hex/.bin) + size.** Link with `$^`, linker script
+      `-T`, `--specs=nano.specs`, `--gc-sections`; first full `.elf`; print `size`.
+- [ ] **Step 9 — Phony targets (`clean`, `flash`).** `.PHONY:`; `flash` via
       `STM32_Programmer_CLI -c port=SWD -w <elf> -rst`.
-- [ ] **Step 10** — Auto-dependency generation: `-MMD -MP` + `-include $(DEPS)`
-      (modern replacement for the book's Ch5 `gcc -M | sed` hack).
+- [ ] **Step 10 — Auto-dependency generation (modern take on the Ch 5 `sed` trick).**
+      `-MMD -MP` + `-include $(DEPS)`.
 
-**Resume marker:** Steps 1–4 done, `main.o` compiles. Now on Step 5 — factoring the
-long recipe into variables (`CC`, `MCU`, `C_DEFS`, `C_INCLUDES`, `OPT`, `CFLAGS`).
-Next after 5: Step 6 `$(wildcard)` to auto-discover all sources.
+**Resume marker:** Steps 1–5 done. `main.o` compiles via `$(CFLAGS)`. Now on **Step 6**
+— `$(wildcard)` to discover all 33 sources and `patsubst`/`addprefix` to map them to
+objects under `build/make/`. Then Step 7 (pattern rule) compiles them all.
