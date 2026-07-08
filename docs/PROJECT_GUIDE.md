@@ -202,17 +202,54 @@ hitting a real error, then fixing it. Update status as you go.
 - [x] **Step 5 — Introduce variables to stop repeating ourselves.** → `CC`, `MCU`,
       `C_DEFS`, `C_INCLUDES`, `OPT`, `WARN`, `CFLAGS`. Learned `:=` vs `=` vs `?=` vs
       `+=`, immediate vs deferred expansion, and `make -n`/`--dry-run` to preview.
-- [ ] **Step 6 — `$(wildcard)` to auto-discover all sources.**  *(NEXT)*
-      Map sources → objects under `$(BUILD)` with `patsubst`/`addprefix`.
-- [ ] **Step 7 — Pattern rule + automatic variables to compile them all.**
-      `$(BUILD)/%.o: %.c` with `$< $@`; `mkdir -p $(dir $@)`; `Makefile` as a prereq.
-- [ ] **Step 8 — Link + objcopy (.hex/.bin) + size.** Link with `$^`, linker script
-      `-T`, `--specs=nano.specs`, `--gc-sections`; first full `.elf`; print `size`.
-- [ ] **Step 9 — Phony targets (`clean`, `flash`).** `.PHONY:`; `flash` via
+- [x] **Step 6 — `$(wildcard)` to auto-discover all sources.** → `BUILD`, `C_SOURCES`,
+      `ASM_SOURCES`, `OBJECTS` (via `$(SRC:.c=.o)` substitution ref + `$(addprefix)`).
+      Inspected with a `show` phony target. ~34 objects mapped under `build/make/`.
+- [x] **Step 7 — Pattern rule + automatic variables to compile them all.**
+      `$(BUILD)/%.o: %.c Makefile` + `.s` rule; `mkdir -p $(dir $@)`; `$< $@`.
+      Retired `VPATH` and the explicit `main.o` rule. `make objects` built all 34.
+- [x] **Step 8 — Link + objcopy (.hex/.bin) + size.** Added `TARGET`, `CP`, `SZ`,
+      `LDSCRIPT`, `LDFLAGS` (`-T`, `--specs=nano.specs`, `-Wl,--gc-sections`,
+      `-Wl,-Map,--cref`, `-lm`), added `-ffunction-sections -fdata-sections` to CFLAGS,
+      made `all` the default goal. Produces `.elf/.hex/.bin`; size ≈ CMake's 18 KB.
+- [ ] **Step 9 — Phony targets (`clean`, `flash`).**  *(NEXT)*  `.PHONY:`; `flash` via
       `STM32_Programmer_CLI -c port=SWD -w <elf> -rst`.
 - [ ] **Step 10 — Auto-dependency generation (modern take on the Ch 5 `sed` trick).**
       `-MMD -MP` + `-include $(DEPS)`.
+- [ ] **Step 11 — How to debug a Makefile (build & link failures).** Preview commands
+      (`make -n`), dump db (`make -p`), trace remakes (`make --trace`, `--debug=b`),
+      print any variable (`print-%` target / `$(info)`/`$(warning)`/`$(error)`),
+      force/what-if (`-B`, `-W`), keep-going (`-k`), verbosity switch. Decode the common
+      errors: `missing separator` (tabs), `No rule to make target` (paths/VPATH),
+      `undefined reference` (missing object / lib order), `multiple definition`.
+      Inspect artifacts: `nm`, `objdump -d`, the `.map` file.
 
-**Resume marker:** Steps 1–5 done. `main.o` compiles via `$(CFLAGS)`. Now on **Step 6**
-— `$(wildcard)` to discover all 33 sources and `patsubst`/`addprefix` to map them to
-objects under `build/make/`. Then Step 7 (pattern rule) compiles them all.
+**Resume marker:** Steps 1–8 done. `make` produces `.elf/.hex/.bin`, size ≈ CMake's.
+Now on **Step 9** (clean + flash phony targets). Then Step 10 (auto-deps `-MMD -MP`)
+and Step 11 (debugging Makefiles). After B1: Track B stage B2 = CLI debugging
+(`make flash` / `gdbserver` / `gdb`), then back to CMake HAL/MISRA/GDB stages 5–8.
+
+---
+
+## 10. Further reading — GNU Make (book: Mecklenburg, *Managing Projects w/ GNU Make*, 3rd ed.)
+
+User has read Ch 1–5 (Simple Makefile, Rules, Variables/Macros, Functions, Commands).
+To handle complex projects (FreeRTOS, multi-component middleware), read next:
+
+- **Ch 8 "C/C++"** — HIGH. Automatic dependency generation (our Step 10), separating
+  source from binary (our `build/make/`), generated sources. Most embedded-relevant.
+- **Ch 6 "Managing Large Projects"** — HIGH. Recursive vs non-recursive make, multi-dir
+  component layout. This is how you scale to FreeRTOS kernel + middleware + app.
+- **Ch 7 "Portable Makefiles"** — MEDIUM. Cross-shell/cross-OS (Windows vs Linux/CI),
+  the `$(shell)`/tool-detection idioms. Relevant given our Git-Bash-vs-cmd gotcha.
+- **Debugging Makefiles** (appendix/section) — supports our Step 11.
+- Skim/skip: Ch 9 "Java" (not relevant).
+
+Key insight to record: **our wildcard + pattern-rule Makefile ALREADY scales to
+FreeRTOS.** Adding an RTOS is just: +5–6 kernel `.c` (tasks/queue/list/timers +
+`heap_4.c` + the `ARM_CM7/r0p1` `port.c`), +2 include dirs (`Source/include`,
+`portable/GCC/ARM_CM7/r0p1`), and a `FreeRTOSConfig.h`. No new Make concepts — just
+more entries in `C_SOURCES`/`C_INCLUDES`. The real new *concepts* for scale are
+Ch 6 (organization) and Ch 8 (dependency correctness). Beyond Make, mastery also
+needs: linker scripts, startup/vector table, and (at big scale) why CMake/Kconfig/
+West/Zephyr exist.

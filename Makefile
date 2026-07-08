@@ -22,10 +22,16 @@ C_INCLUDES := -I Core/Inc \
 
 # ---- Optimisation / debug / warnings ---------------------------------------
 OPT := -O0 -g3 #-gdwarf-2
-WARN := -Wall #-Wextra -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function
+WARN := -Wall #-Wextra -Wno-unused-parameter -Wno-unused-variable \
+  -Wno-unused-function
 
 # ---- One bag of flags for the C compiler -----------------------------------
-CFLAGS := $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) $(WARN)
+#This is a paired technique: -ffunction-sections -fdata-sections at compile, 
+#--gc-sections at link. Together they shrink your image from ~megabytes of 
+#linked HAL to ~18 KB. (Since CFLAGS changed and Makefile is a prereq, your 
+#next build recompiles everything — expected.)
+CFLAGS := $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) $(WARN) -ffunction-sections \
+  -fdata-sections
 
 ASMFLAGS := $(MCU) -x assembler-with-cpp
 
@@ -44,7 +50,20 @@ OBJECTS += $(addprefix $(BUILD)/,$(ASM_SOURCES:.s=.o))
 
 #VPATH = Core/Src
 
-.PHONY: show objects
+TARGET := EMS_vsdebug_cmake
+
+# ---- Tools -----------------------------------------------------------------
+CP := arm-none-eabi-objcopy
+SZ := arm-none-eabi-size
+
+# ---- Linker ----------------------------------------------------------------
+LDSCRIPT := STM32F767XX_FLASH.ld
+LDFLAGS  := $(MCU) -T$(LDSCRIPT) --specs=nano.specs \
+            -Wl,-Map=$(BUILD)/$(TARGET).map,--cref -Wl,--gc-sections -lm
+
+.PHONY: show objects all
+all: $(BUILD)/$(TARGET).elf $(BUILD)/$(TARGET).hex $(BUILD)/$(TARGET).bin
+
 show:
 	@echo "=== C_SOURCES ==="; echo $(C_SOURCES) | tr ' ' '\n'
 	@echo "=== OBJECTS ===";   echo $(OBJECTS)   | tr ' ' '\n'
@@ -64,6 +83,19 @@ $(BUILD)/%.o: %.c Makefile
 $(BUILD)/%.o: %.s Makefile
 	@mkdir -p $(dir $@)
 	$(CC) $(ASMFLAGS) -c $< -o $@
+
+# Link all objects into the .elf, then print the size summary
+$(BUILD)/$(TARGET).elf: $(OBJECTS)
+	$(CC) $^ $(LDFLAGS) -o $@
+	$(SZ) $@
+
+# .elf -> Intel HEX (for many flashers)
+$(BUILD)/%.hex: $(BUILD)/%.elf
+	$(CP) -O ihex $< $@
+
+# .elf -> raw binary (for dfu / offset flashing)
+$(BUILD)/%.bin: $(BUILD)/%.elf
+	$(CP) -O binary -S $< $@
 
 hello:
 	@echo "Make is alive now! Working dir: $(CURDIR)"
