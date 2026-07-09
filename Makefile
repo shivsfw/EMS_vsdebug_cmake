@@ -4,8 +4,12 @@
 export TMP  := $(CURDIR)/build/tmp
 export TEMP := $(CURDIR)/build/tmp
 
+TARGET := EMS_vsdebug_cmake
+
 # ---- Toolchain -------------------------------------------------------------
 CC := arm-none-eabi-gcc
+CP := arm-none-eabi-objcopy
+SZ := arm-none-eabi-size
 
 # ---- MCU architecture (must be identical for compile AND link) -------------
 MCU := -mcpu=cortex-m7 -mthumb -mfpu=fpv5-d16 -mfloat-abi=hard
@@ -50,25 +54,27 @@ OBJECTS += $(addprefix $(BUILD)/,$(ASM_SOURCES:.s=.o))
 
 #VPATH = Core/Src
 
-TARGET := EMS_vsdebug_cmake
-
-# ---- Tools -----------------------------------------------------------------
-CP := arm-none-eabi-objcopy
-SZ := arm-none-eabi-size
-
 # ---- Linker ----------------------------------------------------------------
 LDSCRIPT := STM32F767XX_FLASH.ld
 LDFLAGS  := $(MCU) -T$(LDSCRIPT) --specs=nano.specs \
             -Wl,-Map=$(BUILD)/$(TARGET).map,--cref -Wl,--gc-sections -lm
 
-.PHONY: show objects all
+.PHONY: show objects all clean flash
+
 all: $(BUILD)/$(TARGET).elf $(BUILD)/$(TARGET).hex $(BUILD)/$(TARGET).bin
+
+print-%:
+	@echo '$* = $($*)'
 
 show:
 	@echo "=== C_SOURCES ==="; echo $(C_SOURCES) | tr ' ' '\n'
 	@echo "=== OBJECTS ===";   echo $(OBJECTS)   | tr ' ' '\n'
 
 objects: $(OBJECTS)
+
+clean:
+	@echo "Cleaning $(BUILD) ..."
+	@rm -rf $(BUILD)
 
 
 #Why Makefile is a prerequisite: your flags (CFLAGS) live in the Makefile. 
