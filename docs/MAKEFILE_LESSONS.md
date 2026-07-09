@@ -181,6 +181,60 @@ Link *through* gcc (not `ld` directly) so startup/CRT glue and libc are added.
 
 ---
 
+## 6.1 Deep dive: `-mfloat-abi` (soft / softfp / hard)
+
+> Our project uses `-mfloat-abi=hard` with `-mfpu=fpv5-d16` (F767 has a
+> double-precision FPU). This section explains the three ABIs and why the choice
+> is not just about speed — it's an ABI contract every object and library must agree on.
+
+The `-mfloat-abi` flag controls two separate things: **how math executes** and
+**how float arguments are passed across function-call boundaries** (the calling
+convention / ABI).
+
+**1. `-mfloat-abi=soft`**
+- *How it works:* the compiler ignores any physical FPU. Math operators (`+`, `*`,
+  …) are turned into **software function calls** that emulate floating point using
+  integer math (via `libgcc`).
+- *Function calling:* float arguments passed in the **core integer registers** (`r0-r3`).
+- *Best for:* legacy/low-end MCUs with **no FPU** at all.
+
+**2. `-mfloat-abi=softfp`**
+- *How it works:* code inside functions compiles to **real hardware VFP/NEON
+  instructions** (fast).
+- *Function calling:* mimics the `soft` layout at call boundaries — it moves float
+  data **out of FPU registers back into integer registers** (`r0-r3`) just to pass
+  the argument.
+- *Best for:* interfacing with **legacy pre-compiled libraries built with `soft`**,
+  while still getting hardware acceleration for your own local math.
+
+**3. `-mfloat-abi=hard`**  ← *what we use*
+- *How it works:* full, uncompromised **hardware execution**.
+- *Function calling:* float values **stay in the FPU registers** (`s0`/`d0` …) across
+  function boundaries — skipping the slow copy-to-integer-register step entirely.
+- *Best for:* modern embedded systems, modern Linux (`armhf`, e.g. Raspbian), and any
+  speed-critical computation.
+
+### Critical traps & compatibility rules
+- **Linker errors:** `hard` and `soft`/`softfp` are **not link-compatible**. Compiling
+  your code `hard` and linking a library built `soft` → linker fails with an
+  **attribute-mismatch** error. (This is the concrete reason `$(MCU)` — including
+  `-mfloat-abi` — must be identical at *compile* and *link*, and must match the
+  pre-built libc multilib `--specs=nano.specs` selects.)
+- **Mandatory pairing:** with `softfp` or `hard` you **must** also specify the FPU via
+  `-mfpu` (e.g. `-mfpu=fpv5-d16` for us, or `-mfpu=vfpv4`, `-mfpu=fpv5-sp-d16`).
+- **64-bit ARM (aarch64):** this flag is **not valid** — AArch64 requires an FPU and
+  bakes the `hard` model into its standard calling convention by default.
+
+### Comparison
+
+| Flag | Math execution | Float args passed in | Requirements |
+|---|---|---|---|
+| `-mfloat-abi=soft`   | Software emulation (`libgcc`) | Core integer regs `r0-r3` | Any CPU; no FPU needed |
+| `-mfloat-abi=softfp` | Hardware FPU instructions | Core integer regs `r0-r3` | Needs FPU; links with `soft` binaries |
+| `-mfloat-abi=hard`   | Hardware FPU instructions | Dedicated FPU regs `s0-s15`/`d0-d7` | Needs FPU; highest performance |
+
+---
+
 ## 7. Errors we hit, and what each taught
 
 | Error | Root cause | Fix | Concept |

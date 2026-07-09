@@ -61,7 +61,7 @@ LDFLAGS  := $(MCU) -T$(LDSCRIPT) --specs=nano.specs \
 
 .PHONY: show objects all clean flash
 
-all: $(BUILD)/$(TARGET).elf $(BUILD)/$(TARGET).hex $(BUILD)/$(TARGET).bin
+all: $(BUILD)/$(TARGET).elf $(BUILD)/$(TARGET).hex $(BUILD)/$(TARGET).bingit st
 
 print-%:
 	@echo '$* = $($*)'
@@ -75,6 +75,15 @@ objects: $(OBJECTS)
 clean:
 	@echo "Cleaning $(BUILD) ..."
 	@rm -rf $(BUILD)
+
+#$< expands to the elf (the first/only prerequisite).
+#STM32_Programmer_CLI is ST's CLI flasher (on your PATH via CubeCLT).
+#-c port=SWD — connect to the target over SWD via the onboard ST-LINK.
+#-w $< — write/program the image; addresses come from the ELF.
+#-rst — reset the MCU afterward so it runs your new firmware.
+flash: $(BUILD)/$(TARGET).elf
+	@echo "Flashing $< ..."
+	@STM32_Programmer_CLI -c port=SWD -w $< -rst   #Suggested --> st-flash write $< 0x8000000
 
 
 #Why Makefile is a prerequisite: your flags (CFLAGS) live in the Makefile. 
